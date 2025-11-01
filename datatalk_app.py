@@ -4,12 +4,15 @@ import openai
 import matplotlib.pyplot as plt
 
 # --- Page Setup ---
-st.set_page_config(page_title="DataTalk - AI Data Analytics Assistant", layout="wide")
-st.title("🧠 DataTalk — AI Data Analytics Assistant")
+st.set_page_config(page_title="DataSQLTalk - AI Data Analytics Assistant", layout="wide")
+st.title("🧠 DataSQLTalk — AI Data Analytics Assistant")
 st.write("Ask questions about your CSV data in natural language.")
 
 # --- OpenAI API Key ---
 openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.text_input("🔑 Enter your OpenAI API key:", type="password")
+if not openai.api_key:
+    st.warning("Please provide your OpenAI API key to continue.")
+    st.stop()
 
 # --- File Upload ---
 uploaded_file = st.file_uploader("📤 Upload a CSV file", type=["csv"])
@@ -34,21 +37,29 @@ if uploaded_file:
 
         with st.spinner("Analyzing your data..."):
             try:
-                response = openai.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": prompt}],
+                # --- Corrected OpenAI call ---
+                response = openai.ChatCompletion.create(
+                    model="gpt-5-nano",
+                    messages=[
+                        {"role": "system", "content": "You are DataTalk, an intelligent data analytics assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
                     temperature=0
                 )
-                code = response.choices[0].message.content
+
+                # Get the generated code
+                code = response.choices[0].message['content']
                 st.code(code, language="python")
 
                 # Execute the generated code safely
                 local_vars = {"df": df, "plt": plt, "pd": pd}
                 exec(code, {}, local_vars)
 
+                # Display the result
                 if "result" in local_vars:
                     st.write("📊 **Answer:**", local_vars["result"])
 
+                # Display chart if generated
                 try:
                     st.image("chart.png")
                 except FileNotFoundError:
