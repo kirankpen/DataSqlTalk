@@ -1,6 +1,6 @@
+from openai import OpenAI
 import streamlit as st
 import pandas as pd
-import openai
 import matplotlib.pyplot as plt
 
 # --- Page Setup ---
@@ -9,10 +9,13 @@ st.title("🧠 DataSQLTalk — AI Data Analytics Assistant")
 st.write("Ask questions about your CSV data in natural language.")
 
 # --- OpenAI API Key ---
-openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.text_input("🔑 Enter your OpenAI API key:", type="password")
-if not openai.api_key:
+api_key = st.secrets.get("OPENAI_API_KEY") or st.text_input("🔑 Enter your OpenAI API key:", type="password")
+if not api_key:
     st.warning("Please provide your OpenAI API key to continue.")
     st.stop()
+
+# Create OpenAI client
+client = OpenAI(api_key=api_key)
 
 # --- File Upload ---
 uploaded_file = st.file_uploader("📤 Upload a CSV file", type=["csv"])
@@ -37,8 +40,7 @@ if uploaded_file:
 
         with st.spinner("Analyzing your data..."):
             try:
-                # --- Corrected OpenAI call ---
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-5-nano",
                     messages=[
                         {"role": "system", "content": "You are DataTalk, an intelligent data analytics assistant."},
@@ -47,19 +49,15 @@ if uploaded_file:
                     temperature=0
                 )
 
-                # Get the generated code
-                code = response.choices[0].message['content']
+                code = response.choices[0].message.content
                 st.code(code, language="python")
 
-                # Execute the generated code safely
                 local_vars = {"df": df, "plt": plt, "pd": pd}
                 exec(code, {}, local_vars)
 
-                # Display the result
                 if "result" in local_vars:
                     st.write("📊 **Answer:**", local_vars["result"])
 
-                # Display chart if generated
                 try:
                     st.image("chart.png")
                 except FileNotFoundError:
