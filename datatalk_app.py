@@ -46,7 +46,7 @@ if uploaded_file:
                         {"role": "system", "content": "You are DataTalk, an intelligent data analytics assistant."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0
+                    temperature=1
                 )
 
                 code = response.choices[0].message.content
